@@ -1,0 +1,103 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+
+sourceCompatibility = 1.7
+group = 'com.yata'
+version = '0.1.0-SNAPSHOT'
+
+apply from: "$rootDir/gradle/repositories.gradle"
+apply from: "$rootDir/gradle/dependencies.gradle"
+
+description = """"""
+
+allprojects {
+    apply plugin: 'idea'
+}
+
+idea {
+    module {
+        //excludeDirs += [file('tcserver'),  file('build_tmp')]
+    }
+    project {
+        jdkName = '1.7'
+        languageLevel = '1.7'
+
+        ipr {
+            withXml { xmlFile ->
+                // enable 'Annotation Processors'
+                xmlFile.asNode().component.find { it.@name == 'CompilerConfiguration' }['annotationProcessing'][0].replaceNode {
+                    annotationProcessing {
+                        profile(default: true, name: 'Default', useClasspath: 'true', enabled: true)
+                    }
+                }
+
+                // setup Git root
+                xmlFile.asNode().component.find { it.@name == 'VcsDirectoryMappings' }.replaceNode {
+                    component(name: 'VcsDirectoryMappings') {
+                        mapping(directory: "", vcs: "")
+                        mapping(directory: "\$PROJECT_DIR\$", vcs: 'Git')
+                    }
+                }
+
+            }
+        }
+    }
+}
+
+subprojects {
+
+}
+
+subprojects.each { subproject -> evaluationDependsOn(subproject.path)}
+
+repositories {
+
+    //If Nexus Goes Down, Uncomment these lines. Be sure to enable Proxy Settings as well. May create a switch for this.
+    maven { url repos.cloudera }
+    maven { url repos.conjars }
+    maven { url repos.mvncentral }
+    mavenCentral()
+}
+
+dependencies {
+    compile([
+            libs.oozieClient,
+            libs.oozieCore,
+            libs.hadoopCore,
+            libs.hadoopClient,
+            libs.hadoopCommon
+    ])
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "http://arlpscsp01.ecorp.cat.com:8081/nexus/content/repositories/thirdparty/") {
+                authentication(userName: "admin", password: "admin123")
+            }
+
+            addFilter('jar')
+                    {
+                        artifact, file -> artifact.ext == 'jar'
+                    }
+        }
+    }
+}
+
+test {
+    systemProperties['oozie.properties'] = 'oozie-local.properties'
+    systemProperties['oozie.home.dir'] = '/Users/hpatel/Tech/Projects/OSS/BigData/yata/src/test/resources/yata'
+    systemProperties['oozie.data.dir'] = '/Users/hpatel/Tech/Projects/OSS/BigData/yata/src/test/resources/yata/test-data'
+    systemProperties['oozie.test.dir'] = '/Users/hpatel/Tech/Projects/OSS/BigData/yata/src/test/resources/yata/test-data'
+    systemProperties['oozie.test.db'] = 'hsqldb'
+    systemProperties['oozie.test.config.file'] = '/Users/hpatel/Tech/Projects/OSS/BigData/yata/src/test/resources/yata/test-data/hsqldb-oozie-site.xml'
+    systemProperties['oozie.service.JPAService.jdbc.driver'] = 'org.hsqldb.jdbcDriver'
+    systemProperties['oozie.service.JPAService.jdbc.url'] = 'jdbc:hsqldb:mem:oozie-db;create=true'
+    systemProperties['oozie.service.JPAService.create.db.schema'] = 'true'
+
+    maxParallelForks = 4
+}
+wrapper {
+    gradleVersion = '2.4'
+}

@@ -1,0 +1,4 @@
+*.txt eol=lf
+*.properties eol=lf
+*.sh eol=lf
+*.xml eol=lf

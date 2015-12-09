@@ -1,0 +1,11 @@
+ext {
+    repos = [:]
+}
+
+repos += [
+
+    cloudera:"https://repository.cloudera.com/artifactory/cloudera-repos/",
+    conjars:"http://conjars.org/repo/",
+    mvncentral:"http://repo1.maven.org/maven2/"
+]
+
